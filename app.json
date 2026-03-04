@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "legalese-gpt",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -37,7 +37,6 @@
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
-        "RECORD_AUDIO",
         "INTERNET"
       ]
     },

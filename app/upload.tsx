@@ -54,7 +54,7 @@ export default function UploadScreen() {
         const status = await getRateLimitStatus();
         setRateLimitStatus(status);
       } catch (error) {
-        console.error('Error loading rate limit status:', error);
+        if (__DEV__) console.error('Error loading rate limit status:', error);
       }
     };
     
@@ -66,7 +66,7 @@ export default function UploadScreen() {
   }, []);
 
   const handleFileSelected = (uri: string, name: string, type: string) => {
-    console.log('File selected:', { uri, name, type });
+    if (__DEV__) console.log('File selected:', { uri, name, type });
     setFileUri(uri);
     setFileName(name);
     setFileType(type);
@@ -102,7 +102,7 @@ export default function UploadScreen() {
     updateProgress('Starting document processing...', 10);
 
     try {
-      console.log('Processing document:', fileUri, 'type:', fileType);
+      if (__DEV__) console.log('Processing document:', fileUri, 'type:', fileType);
       
       // Extract text based on file type
       let extractedText = '';
@@ -110,25 +110,25 @@ export default function UploadScreen() {
       
       if (fileType === 'image') {
         updateProgress('Performing OCR and analysis...', 30);
-        console.log('Extracting and simplifying text from image');
+        if (__DEV__) console.log('Extracting and simplifying text from image');
         try {
           const result = await extractTextFromImage(fileUri);
           extractedText = result.originalText;
           simplifiedText = result.simplifiedText;
           updateProgress('OCR completed successfully', 50);
         } catch (ocrError) {
-          console.error('OCR error:', ocrError);
+          if (__DEV__) console.error('OCR error:', ocrError);
           throw new Error(ocrError instanceof Error ? ocrError.message : 'Text extraction failed. Please try again with a clearer image or better lighting.');
         }
       } else {
         // For non-image files, extract text first, then simplify
         if (fileType === 'pdf') {
           updateProgress('Extracting text from PDF...', 30);
-          console.log('Extracting text from PDF');
+          if (__DEV__) console.log('Extracting text from PDF');
           try {
             extractedText = await extractTextFromPDF(fileUri);
           } catch (pdfError) {
-            console.error('PDF extraction error:', pdfError);
+            if (__DEV__) console.error('PDF extraction error:', pdfError);
             if (pdfError instanceof Error) {
               throw pdfError;
             } else {
@@ -137,11 +137,11 @@ export default function UploadScreen() {
           }
         } else if (fileType === 'docx' || fileType === 'doc') {
           updateProgress(`Extracting text from ${fileType.toUpperCase()} document...`, 30);
-          console.log(`Extracting text from ${fileType} document`);
+          if (__DEV__) console.log(`Extracting text from ${fileType} document`);
           try {
             extractedText = await extractTextFromWord(fileUri, fileType);
           } catch (docError) {
-            console.error('Document extraction error:', docError);
+            if (__DEV__) console.error('Document extraction error:', docError);
             if (docError instanceof Error) {
               throw docError;
             } else {
@@ -150,11 +150,11 @@ export default function UploadScreen() {
           }
         } else if (fileType === 'text' || fileUri.endsWith('.txt')) {
           updateProgress('Reading text file...', 30);
-          console.log('Reading text file');
+          if (__DEV__) console.log('Reading text file');
           try {
             extractedText = await extractTextFromTextFile(fileUri);
           } catch (textError) {
-            console.error('Text file reading error:', textError);
+            if (__DEV__) console.error('Text file reading error:', textError);
             throw new Error(textError instanceof Error ? textError.message : 'Failed to read text file. The file may be corrupted or in an unsupported format.');
           }
         } else {
@@ -162,7 +162,7 @@ export default function UploadScreen() {
         }
         
         updateProgress('Text extraction completed', 50);
-        console.log('Extracted text:', extractedText?.substring(0, 100) + '...');
+        if (__DEV__) console.log('Extracted text:', extractedText?.substring(0, 100) + '...');
         
         if (!extractedText || extractedText.trim().length === 0) {
           throw new Error('No text was extracted. The file may be empty or in an unsupported format.');
@@ -170,27 +170,27 @@ export default function UploadScreen() {
         
         // Simplify the text using AI
         updateProgress('AI is analyzing and simplifying text...', 70);
-        console.log('Simplifying text');
+        if (__DEV__) console.log('Simplifying text');
         
         try {
           simplifiedText = await simplifyText(extractedText);
-          console.log('Simplified text:', simplifiedText?.substring(0, 100) + '...');
+          if (__DEV__) console.log('Simplified text:', simplifiedText?.substring(0, 100) + '...');
         } catch (simplifyError) {
-          console.error('Simplification error:', simplifyError);
+          if (__DEV__) console.error('Simplification error:', simplifyError);
           throw new Error(simplifyError instanceof Error ? simplifyError.message : 'Text simplification failed. Please try again.');
         }
       }
       
       // Generate a title
       updateProgress('Generating document title...', 85);
-      console.log('Generating title');
+      if (__DEV__) console.log('Generating title');
       
       let title;
       try {
         title = fileName || await generateDocumentTitle(extractedText);
-        console.log('Generated title:', title);
+        if (__DEV__) console.log('Generated title:', title);
       } catch (titleError) {
-        console.error('Title generation error:', titleError);
+        if (__DEV__) console.error('Title generation error:', titleError);
         title = fileName || "Uploaded Document";
       }
       
@@ -206,24 +206,24 @@ export default function UploadScreen() {
       
       // Add to store
       updateProgress('Saving document...', 90);
-      console.log('Adding document to history');
+      if (__DEV__) console.log('Adding document to history');
       addToHistory(newDocument);
       
       // Perform AI analysis if enabled
       if (useAiAnalysis) {
         updateProgress('Performing AI contract analysis...', 95);
-        console.log('Starting AI analysis');
+        if (__DEV__) console.log('Starting AI analysis');
         
         try {
           const aiAnalysis = await analyzeContract(extractedText);
-          console.log('AI analysis completed:', aiAnalysis);
+          if (__DEV__) console.log('AI analysis completed:', aiAnalysis);
           
           // Update the document with AI analysis
           updateDocumentWithAI(newDocument.id, aiAnalysis);
         } catch (aiError) {
-          console.error('AI analysis error:', aiError);
+          if (__DEV__) console.error('AI analysis error:', aiError);
           // Don't fail the entire process if AI analysis fails
-          console.log('Continuing without AI analysis');
+          if (__DEV__) console.log('Continuing without AI analysis');
         }
       }
       
@@ -233,14 +233,14 @@ export default function UploadScreen() {
       
       // Navigate to results
       updateProgress('Complete!', 100);
-      console.log('Navigating to results');
+      if (__DEV__) console.log('Navigating to results');
       
       // Small delay to show completion
       setTimeout(() => {
         router.push(`/results/${newDocument.id}`);
       }, 500);
     } catch (error) {
-      console.error('Error processing document:', error);
+      if (__DEV__) console.error('Error processing document:', error);
       if (error instanceof Error) {
         setError(error.message);
       } else {

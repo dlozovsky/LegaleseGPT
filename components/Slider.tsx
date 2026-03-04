@@ -3,7 +3,16 @@ import { View, StyleSheet, Platform } from 'react-native';
 import colors from '@/constants/colors';
 import { useThemeStore } from '@/hooks/useThemeStore';
 
-// Use a web-compatible approach for sliders
+// Lazy-load the native community slider to avoid errors on web
+let NativeSlider: React.ComponentType<any> | null = null;
+if (Platform.OS !== 'web') {
+  try {
+    NativeSlider = require('@react-native-community/slider').default;
+  } catch {
+    // Package not available – will fall back to non-interactive display
+  }
+}
+
 interface SliderProps {
   value: number[];
   onValueChange: (value: number[]) => void;
@@ -14,11 +23,11 @@ interface SliderProps {
 
 export default function Slider({ value, onValueChange, min, max, step }: SliderProps) {
   const { isDarkMode } = useThemeStore();
-  
+
   const primaryColor = isDarkMode ? colors.darkPrimary : colors.primary;
   const trackColor = isDarkMode ? colors.darkBorder : colors.border;
-  
-  // For web, use a simple HTML input slider
+
+  // Web: HTML range input
   if (Platform.OS === 'web') {
     return (
       <View style={styles.container}>
@@ -43,39 +52,38 @@ export default function Slider({ value, onValueChange, min, max, step }: SliderP
     );
   }
 
-  // For native platforms, use a custom implementation
+  // Native: Use @react-native-community/slider when available
+  if (NativeSlider) {
+    return (
+      <View style={styles.container}>
+        <NativeSlider
+          style={{ width: '100%', height: 40 }}
+          minimumValue={min}
+          maximumValue={max}
+          step={step}
+          value={value[0]}
+          onValueChange={(v: number) => onValueChange([v])}
+          minimumTrackTintColor={primaryColor}
+          maximumTrackTintColor={trackColor}
+          thumbTintColor={primaryColor}
+        />
+      </View>
+    );
+  }
+
+  // Fallback: static visual only (should rarely occur)
   return (
     <View style={styles.container}>
       <View style={[styles.track, { backgroundColor: trackColor }]}>
-        <View 
+        <View
           style={[
-            styles.fill, 
-            { 
+            styles.fill,
+            {
               width: `${((value[0] - min) / (max - min)) * 100}%`,
-              backgroundColor: primaryColor
-            }
-          ]} 
+              backgroundColor: primaryColor,
+            },
+          ]}
         />
-        <View 
-          style={[
-            styles.thumb, 
-            { 
-              left: `${((value[0] - min) / (max - min)) * 100}%`,
-              backgroundColor: primaryColor
-            }
-          ]} 
-        />
-      </View>
-      <View style={styles.steps}>
-        {Array.from({ length: max - min + 1 }).map((_, i) => (
-          <View 
-            key={i} 
-            style={[
-              styles.step,
-              { backgroundColor: value[0] >= i + min ? primaryColor : trackColor }
-            ]}
-          />
-        ))}
       </View>
     </View>
   );
@@ -97,28 +105,5 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     borderRadius: 2,
-  },
-  thumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    position: 'absolute',
-    top: -8,
-    marginLeft: -10,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  steps: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
-  step: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
   },
 });

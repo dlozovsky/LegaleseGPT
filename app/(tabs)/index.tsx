@@ -7,30 +7,28 @@ import colors from '@/constants/colors';
 import { useThemeStore } from '@/hooks/useThemeStore';
 import Button from '@/components/Button';
 
-// Check if Clerk is available
-const getClerkAuth = () => {
-  try {
-    const clerkExpo = require('@clerk/clerk-expo');
-    return {
-      useAuth: clerkExpo.useAuth,
-      available: true
-    };
-  } catch (error) {
-    return {
-      useAuth: () => ({ isSignedIn: false, user: null }),
-      available: false
-    };
+// Resolve Clerk at module level so the hook reference is stable
+let clerkAvailable = false;
+let useClerkAuth: () => { isSignedIn: boolean; user: any } = () => ({ isSignedIn: false, user: null });
+try {
+  const clerkExpo = require('@clerk/clerk-expo');
+  if (clerkExpo?.useAuth) {
+    useClerkAuth = clerkExpo.useAuth;
+    clerkAvailable = true;
   }
-};
+} catch {
+  // Clerk not installed – running in guest mode
+}
 
-const clerkAuth = getClerkAuth();
+function useAuth() {
+  // Always call the hook unconditionally to satisfy Rules of Hooks.
+  // When Clerk is unavailable the stub returns static guest data.
+  return useClerkAuth();
+}
 
 export default function HomeScreen() {
   const { isDarkMode } = useThemeStore();
-  
-  // Only use Clerk hooks if available
-  const authData = clerkAuth.available ? clerkAuth.useAuth() : { isSignedIn: false, user: null };
-  const { isSignedIn, user } = authData;
+  const { isSignedIn, user } = useAuth() as { isSignedIn: boolean; user: any };
   
   const themeColors = isDarkMode ? {
     background: colors.darkBackground,
@@ -96,7 +94,7 @@ export default function HomeScreen() {
           </View>
 
           {/* Authentication Status */}
-          {clerkAuth.available && (
+          {clerkAvailable && (
             <View style={[styles.authCard, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
               {isSignedIn ? (
                 <View style={styles.authContent}>

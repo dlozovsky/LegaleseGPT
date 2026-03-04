@@ -1,31 +1,11 @@
-import { BundleInspector } from '../.rorkai/inspector';
-import { RorkErrorBoundary } from '../.rorkai/rork-error-boundary';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { ErrorBoundary } from '@/app/error-boundary';
-import { getClerkPublishableKey, requireClerkExpo, tokenCache } from '@/utils/authConfig';
+import { getClerkProvider, tokenCache } from '@/utils/clerkHelpers';
 import React from "react";
-
-const getClerkProvider = () => {
-  try {
-    const clerkExpo = requireClerkExpo();
-    const publishableKey = getClerkPublishableKey();
-    if (clerkExpo && publishableKey) {
-      return {
-        ClerkProvider: clerkExpo.ClerkProvider,
-        publishableKey,
-        available: true,
-      } as const;
-    }
-    return { available: false } as const;
-  } catch (_err) {
-    console.log('Clerk not available, running without authentication');
-    return { available: false } as const;
-  }
-};
 
 const clerkConfig = getClerkProvider();
 

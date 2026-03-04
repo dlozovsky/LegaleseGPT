@@ -6,37 +6,7 @@ import { useThemeStore } from '@/hooks/useThemeStore';
 import colors from '@/constants/colors';
 import Button from '@/components/Button';
 import ErrorMessage from '@/components/ErrorMessage';
-import { isClerkConfigured } from '@/utils/authConfig';
-
-// Check if Clerk is available and configured
-const getClerkHooks = () => {
-  try {
-    const configured = isClerkConfigured();
-    if (!configured) {
-      return {
-        useSignIn: () => ({ signIn: null, setActive: null, isLoaded: false }),
-        useSignUp: () => ({ signUp: null, setActive: null, isLoaded: false }),
-        useAuth: () => ({ isSignedIn: false }),
-        available: false,
-      };
-    }
-    const clerkExpo = require('@clerk/clerk-expo');
-    return {
-      useSignIn: clerkExpo.useSignIn,
-      useSignUp: clerkExpo.useSignUp,
-      useAuth: clerkExpo.useAuth,
-      available: true,
-    };
-  } catch (error) {
-    console.log('Clerk not available, running in guest mode');
-    return {
-      useSignIn: () => ({ signIn: null, setActive: null, isLoaded: false }),
-      useSignUp: () => ({ signUp: null, setActive: null, isLoaded: false }),
-      useAuth: () => ({ isSignedIn: false }),
-      available: false,
-    };
-  }
-};
+import { getClerkHooks } from '@/utils/clerkHelpers';
 
 const clerkHooks = getClerkHooks();
 
@@ -91,12 +61,12 @@ export default function AuthModal() {
     setError(null);
 
     try {
-      console.log('[Auth] signIn.create start', { email });
+      if (__DEV__) console.log('[Auth] signIn.create start', { email });
       const result = await signIn.create({
         identifier: email,
         password,
       });
-      console.log('[Auth] signIn.create result', result?.status);
+      if (__DEV__) console.log('[Auth] signIn.create result', result?.status);
 
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId });
@@ -105,7 +75,7 @@ export default function AuthModal() {
         setError('Sign in requires additional steps');
       }
     } catch (err: any) {
-      console.log('[Auth] signIn error', err);
+      if (__DEV__) console.log('[Auth] signIn error', err);
       const msg = Array.isArray(err?.errors) && err.errors[0]?.message ? err.errors[0].message : 'Sign in failed';
       setError(msg);
     } finally {
@@ -123,12 +93,12 @@ export default function AuthModal() {
     setError(null);
 
     try {
-      console.log('[Auth] signUp.create start', { email });
+      if (__DEV__) console.log('[Auth] signUp.create start', { email });
       const result = await signUp.create({
         emailAddress: email,
         password,
       });
-      console.log('[Auth] signUp.create result', result?.status);
+      if (__DEV__) console.log('[Auth] signUp.create result', result?.status);
 
       if (result.status === 'complete') {
         await setActiveSignUp({ session: result.createdSessionId });
@@ -136,11 +106,11 @@ export default function AuthModal() {
         return;
       }
 
-      console.log('[Auth] prepareEmailAddressVerification sending code');
+      if (__DEV__) console.log('[Auth] prepareEmailAddressVerification sending code');
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setVerificationEmailSent(true);
     } catch (err: any) {
-      console.log('[Auth] signUp error', err);
+      if (__DEV__) console.log('[Auth] signUp error', err);
       const msg = Array.isArray(err?.errors) && err.errors[0]?.message ? err.errors[0].message : 'Sign up failed';
       setError(msg);
     } finally {
@@ -164,9 +134,9 @@ export default function AuthModal() {
     setIsLoading(true);
     setError(null);
     try {
-      console.log('[Auth] attemptEmailAddressVerification start');
+      if (__DEV__) console.log('[Auth] attemptEmailAddressVerification start');
       const verification = await signUp.attemptEmailAddressVerification({ code: verificationCode.trim() });
-      console.log('[Auth] attemptEmailAddressVerification result', verification?.status);
+      if (__DEV__) console.log('[Auth] attemptEmailAddressVerification result', verification?.status);
       if (verification.status === 'complete') {
         await setActiveSignUp({ session: verification.createdSessionId });
         router.replace('/(tabs)');
@@ -174,7 +144,7 @@ export default function AuthModal() {
         setError('Verification failed. Check the code and try again.');
       }
     } catch (err: any) {
-      console.log('[Auth] verify error', err);
+      if (__DEV__) console.log('[Auth] verify error', err);
       const msg = Array.isArray(err?.errors) && err.errors[0]?.message ? err.errors[0].message : 'Verification failed';
       setError(msg);
     } finally {
@@ -185,11 +155,11 @@ export default function AuthModal() {
   const handleResendCode = async () => {
     if (!clerkHooks.available || !signUpLoaded || !signUp) return;
     try {
-      console.log('[Auth] resend verification code');
+      if (__DEV__) console.log('[Auth] resend verification code');
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
       setVerificationEmailSent(true);
     } catch (e) {
-      console.log('[Auth] resend error', e);
+      if (__DEV__) console.log('[Auth] resend error', e);
     }
   };
 

@@ -43,7 +43,7 @@ export const tokenCache: {
       const value = await SecureStore.getItemAsync(key);
       return value ?? null;
     } catch (e) {
-      console.log('tokenCache.getToken error', e);
+      if (__DEV__) console.log('tokenCache.getToken error', e);
       return null;
     }
   },
@@ -57,7 +57,7 @@ export const tokenCache: {
       const SecureStore = require('expo-secure-store') as typeof import('expo-secure-store');
       await SecureStore.setItemAsync(key, value);
     } catch (e) {
-      console.log('tokenCache.saveToken error', e);
+      if (__DEV__) console.log('tokenCache.saveToken error', e);
     }
   },
 };

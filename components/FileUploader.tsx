@@ -59,7 +59,7 @@ export default function FileUploader({ onFileSelected }: FileUploaderProps) {
       
       setShowOptions(false);
     } catch (error) {
-      console.error('Error picking image:', error);
+      if (__DEV__) console.error('Error picking image:', error);
       setError('Image upload failed. Please try again.');
     } finally {
       setIsLoading(false);
@@ -105,7 +105,7 @@ export default function FileUploader({ onFileSelected }: FileUploaderProps) {
       
       setShowOptions(false);
     } catch (error) {
-      console.error('Error picking document:', error);
+      if (__DEV__) console.error('Error picking document:', error);
       setError('Document upload failed. Please try again.');
     } finally {
       setIsLoading(false);
