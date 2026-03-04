@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
-import { Heart, Share2, Download, ChevronLeft, Sparkles } from 'lucide-react-native';
+import { Heart, Share2, Download, ChevronLeft, Sparkles, MessageCircle, ArrowLeftRight, Calendar, Crown } from 'lucide-react-native';
 import { useDocumentStore } from '@/hooks/useDocumentStore';
 import { useThemeStore } from '@/hooks/useThemeStore';
+import { useSubscriptionStore } from '@/hooks/useSubscriptionStore';
+import { exportDocument } from '@/utils/exportService';
 import colors from '@/constants/colors';
 import Button from '@/components/Button';
 import TextDisplay from '@/components/TextDisplay';
@@ -25,8 +27,10 @@ export default function ResultsScreen() {
   const { id } = useLocalSearchParams();
   const { isDarkMode } = useThemeStore();
   const { getDocument, toggleFavorite, saved } = useDocumentStore();
+  const { canExport, incrementExports, isPremium } = useSubscriptionStore();
   const [activeTab, setActiveTab] = useState<TabType>('simplified');
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
   
   const document = getDocument(id as string);
   const isFavorited = saved.some(doc => doc.id === document?.id);
@@ -83,6 +87,30 @@ ${content}`,
 
   const handleFavorite = () => {
     toggleFavorite(document);
+  };
+
+  const handleExport = async () => {
+    if (!canExport()) {
+      router.push('/paywall');
+      return;
+    }
+    setIsExporting(true);
+    try {
+      await exportDocument(document);
+      incrementExports();
+    } catch (error) {
+      Alert.alert('Export Error', error instanceof Error ? error.message : 'Failed to export document.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleChat = () => {
+    router.push(`/chat/${document.id}`);
+  };
+
+  const handleCompare = () => {
+    router.push(`/compare/${document.id}`);
   };
 
   const toggleSection = (index: number) => {
@@ -200,6 +228,25 @@ ${content}`,
         {activeTab === 'analysis' && document.aiAnalysis && (
           <View style={styles.analysisContainer}>
             <ContractOverview analysis={document.aiAnalysis} />
+
+            {/* Key Dates */}
+            {document.keyDates && document.keyDates.length > 0 && (
+              <View style={[styles.keyDatesContainer, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <View style={styles.keyDatesHeader}>
+                  <Calendar size={18} color={isDarkMode ? colors.darkPrimary : colors.primary} />
+                  <Text style={[styles.keyDatesTitle, { color: themeColors.text }]}>Key Dates & Deadlines</Text>
+                </View>
+                {document.keyDates.map((kd, i) => (
+                  <View key={i} style={[styles.keyDateRow, { borderColor: themeColors.border }]}>
+                    <Text style={[styles.keyDateLabel, { color: themeColors.text }]}>{kd.label}</Text>
+                    <Text style={[styles.keyDateValue, { color: isDarkMode ? colors.darkPrimary : colors.primary }]}>{kd.date}</Text>
+                    {kd.description && (
+                      <Text style={[styles.keyDateDesc, { color: themeColors.textLight }]}>{kd.description}</Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
             
             <View style={styles.sectionsContainer}>
               <Text style={[styles.sectionsTitle, { color: themeColors.text }]}>
@@ -216,6 +263,28 @@ ${content}`,
             </View>
           </View>
         )}
+
+        {/* Quick action bar */}
+        <View style={[styles.quickActions, { borderColor: themeColors.border }]}>
+          <TouchableOpacity style={styles.quickAction} onPress={handleChat}>
+            <MessageCircle size={20} color={isDarkMode ? colors.darkPrimary : colors.primary} />
+            <Text style={[styles.quickActionText, { color: themeColors.text }]}>Ask AI</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickAction} onPress={handleCompare}>
+            <ArrowLeftRight size={20} color={isDarkMode ? colors.darkPrimary : colors.primary} />
+            <Text style={[styles.quickActionText, { color: themeColors.text }]}>Compare</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickAction} onPress={handleExport} disabled={isExporting}>
+            <Download size={20} color={isDarkMode ? colors.darkPrimary : colors.primary} />
+            <Text style={[styles.quickActionText, { color: themeColors.text }]}>{isExporting ? 'Exporting...' : 'Export'}</Text>
+          </TouchableOpacity>
+          {!isPremium && (
+            <TouchableOpacity style={styles.quickAction} onPress={() => router.push('/paywall')}>
+              <Crown size={20} color={colors.warning} />
+              <Text style={[styles.quickActionText, { color: colors.warning }]}>Upgrade</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* Actions */}
         <View style={styles.actions}>
@@ -316,8 +385,56 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
   },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 16,
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+  },
+  quickAction: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  quickActionText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  keyDatesContainer: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+  },
+  keyDatesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  keyDatesTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  keyDateRow: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+  },
+  keyDateLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  keyDateValue: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  keyDateDesc: {
+    fontSize: 12,
+    marginTop: 2,
+  },
   actions: {
-    marginTop: 32,
+    marginTop: 20,
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
     gap: 12,
   },
