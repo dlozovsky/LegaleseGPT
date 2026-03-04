@@ -16,6 +16,7 @@ export interface EnhancedDocumentItem extends DocumentItem {
   aiAnalysis?: ContractAnalysis;
   hasAiAnalysis?: boolean;
   keyDates?: KeyDate[];
+  detectedLanguage?: string;
 }
 
 interface DocumentState {

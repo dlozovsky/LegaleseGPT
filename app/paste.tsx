@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useDocumentStore } from '@/hooks/useDocumentStore';
 import { useThemeStore } from '@/hooks/useThemeStore';
-import { simplifyText, getRateLimitStatus } from '@/utils/aiService';
+import { simplifyText, getRateLimitStatus, detectLanguage } from '@/utils/aiService';
 import { generateDocumentTitle } from '@/utils/documentUtils';
 import Button from '@/components/Button';
 import Header from '@/components/Header';
@@ -14,7 +14,7 @@ import RateLimitInfo from '@/components/RateLimitInfo';
 import { isDocumentTooLarge } from '@/utils/documentProcessing';
 
 export default function PasteScreen() {
-  const { isDarkMode } = useThemeStore();
+  const { isDarkMode, outputLanguage } = useThemeStore();
   const [text, setText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,8 +72,11 @@ export default function PasteScreen() {
     setError(null);
 
     try {
+      // Detect language
+      const detectedLanguage = await detectLanguage(text);
+
       // Simplify the text (this will also validate if it's a legal document)
-      const simplifiedText = await simplifyText(text);
+      const simplifiedText = await simplifyText(text, 1, outputLanguage);
       
       if (!simplifiedText || simplifiedText.trim().length === 0) {
         throw new Error('Text simplification failed. Please try again with different text.');
@@ -88,7 +91,8 @@ export default function PasteScreen() {
         title,
         date: new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}),
         text: text,
-        simplified: simplifiedText
+        simplified: simplifiedText,
+        detectedLanguage,
       };
       
       // Add to store

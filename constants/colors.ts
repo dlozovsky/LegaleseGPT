@@ -28,6 +28,25 @@ const colors = {
   riskLowLight: '#D1FAE5', // emerald-100
   riskMediumLight: '#FEF3C7', // amber-100
   riskHighLight: '#FEE2E2', // red-100
+
+  // Annotation highlight colors
+  highlightYellow: '#FBBF24', // amber-400
+  highlightGreen: '#34D399', // emerald-400
+  highlightBlue: '#60A5FA', // blue-400
+  highlightPink: '#F472B6', // pink-400
+  highlightYellowLight: '#FEF9C3', // amber-100
+  highlightGreenLight: '#D1FAE5', // emerald-100
+  highlightBlueLight: '#DBEAFE', // blue-100
+  highlightPinkLight: '#FCE7F3', // pink-100
+};
+
+export type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink';
+
+export const highlightColorMap: Record<HighlightColor, { bg: string; bgLight: string }> = {
+  yellow: { bg: colors.highlightYellow, bgLight: colors.highlightYellowLight },
+  green: { bg: colors.highlightGreen, bgLight: colors.highlightGreenLight },
+  blue: { bg: colors.highlightBlue, bgLight: colors.highlightBlueLight },
+  pink: { bg: colors.highlightPink, bgLight: colors.highlightPinkLight },
 };
 
 export default colors;

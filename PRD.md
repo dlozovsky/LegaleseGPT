@@ -53,8 +53,8 @@ Legalese GPT is a mobile-first AI-powered legal document simplifier. Users uploa
 
 | # | Feature | Status |
 |---|---------|--------|
-| 20 | Multi-language document support | 🔲 Planned |
-| 21 | In-document annotation / highlighting | 🔲 Planned |
+| 20 | Multi-language document support | ✅ Complete |
+| 21 | In-document annotation / highlighting | ✅ Complete |
 
 ### P3 — Future Roadmap
 
