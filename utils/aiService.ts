@@ -3,9 +3,13 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // API endpoint from toolkit
+// WARNING: This endpoint has no authentication. In production, requests should
+// be proxied through a backend that attaches an API key.
 const API_URL = 'https://toolkit.rork.com/text/llm/';
 
 // User rate limiting constants
+// WARNING: Rate limiting is enforced client-side only (AsyncStorage). A
+// server-side enforcement layer is required before any real launch.
 const MAX_SCANS_PER_MINUTE = 1;
 const MAX_SCANS_PER_DAY = 5;
 const MAX_TOKENS_PER_MINUTE = 33000;
@@ -57,7 +61,7 @@ interface UserCounters {
  */
 export async function callAPI(messages: any[]): Promise<string> {
   try {
-    console.log('Calling AI API with messages:', JSON.stringify(messages).substring(0, 200) + '...');
+    if (__DEV__) console.log('Calling AI API with messages:', JSON.stringify(messages).substring(0, 200) + '...');
     
     // Check rate limits before making the API call
     const canProceed = await checkRateLimits();
@@ -77,11 +81,11 @@ export async function callAPI(messages: any[]): Promise<string> {
       }),
     });
 
-    console.log('API Response status:', response.status);
+    if (__DEV__) console.log('API Response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('API error response:', errorText);
+      if (__DEV__) console.error('API error response:', errorText);
       
       // Handle 500 errors specifically
       if (response.status === 500) {
@@ -92,7 +96,7 @@ export async function callAPI(messages: any[]): Promise<string> {
     }
 
     const data = await response.json();
-    console.log('API Response data:', data);
+    if (__DEV__) console.log('API Response data:', data);
     
     if (!data.completion) {
       throw new Error('No completion returned from API');
@@ -102,10 +106,10 @@ export async function callAPI(messages: any[]): Promise<string> {
     const actualTokens = data.usage?.total_tokens || estimateTokens(messages, data.completion);
     await updateTokenUsage(actualTokens);
     
-    console.log('Successfully received response from API');
+    if (__DEV__) console.log('Successfully received response from API');
     return data.completion;
   } catch (error) {
-    console.error('Error calling API:', error);
+    if (__DEV__) console.error('Error calling API:', error);
     throw error; // Don't fall back to mock - let the caller handle the error
   }
 }
@@ -356,7 +360,7 @@ export async function analyzeContract(text: string): Promise<ContractAnalysis> {
           originalText: section.content
         });
       } catch (error) {
-        console.error(`Error analyzing section "${section.heading}":`, error);
+        if (__DEV__) console.error(`Error analyzing section "${section.heading}":`, error);
         // Provide fallback analysis
         sectionAnalyses.push({
           heading: section.heading,
@@ -382,7 +386,7 @@ export async function analyzeContract(text: string): Promise<ContractAnalysis> {
       documentType
     };
   } catch (error) {
-    console.error('Error analyzing contract:', error);
+    if (__DEV__) console.error('Error analyzing contract:', error);
     throw error;
   }
 }
@@ -444,7 +448,7 @@ Content: ${content}`
       tooltip: parsed.tooltip
     };
   } catch (parseError) {
-    console.error('Error parsing AI response:', parseError);
+    if (__DEV__) console.error('Error parsing AI response:', parseError);
     
     // Fallback: extract information from text response
     return {
@@ -618,7 +622,7 @@ ${text}`
     
     return cleanedText;
   } catch (error) {
-    console.error('Error simplifying text:', error);
+    if (__DEV__) console.error('Error simplifying text:', error);
     throw error; // Don't fall back to mock - let the caller handle the error
   }
 }
@@ -723,7 +727,7 @@ ${text.substring(0, 500)}...`
     
     return cleanResult;
   } catch (error) {
-    console.error('Error analyzing document type:', error);
+    if (__DEV__) console.error('Error analyzing document type:', error);
     return detectDocumentTypeFromKeywords(text);
   }
 }
@@ -830,7 +834,7 @@ async function checkRateLimits(): Promise<{ allowed: boolean; message: string }>
     
     return { allowed: true, message: "" };
   } catch (error) {
-    console.error('Error checking rate limits:', error);
+    if (__DEV__) console.error('Error checking rate limits:', error);
     // Don't allow the request if there's an error checking limits
     return { allowed: false, message: "Rate limit check failed. Please try again." };
   }
@@ -852,7 +856,7 @@ async function updateTokenUsage(tokens: number): Promise<void> {
     // Save updated counters
     await saveUserCounters(counters);
   } catch (error) {
-    console.error('Error updating token usage:', error);
+    if (__DEV__) console.error('Error updating token usage:', error);
   }
 }
 
@@ -867,7 +871,7 @@ async function getUserCounters(): Promise<UserCounters> {
       return JSON.parse(countersJson);
     }
   } catch (error) {
-    console.error('Error getting user counters:', error);
+    if (__DEV__) console.error('Error getting user counters:', error);
   }
   
   // Return default counters if none exist
@@ -888,7 +892,7 @@ async function saveUserCounters(counters: UserCounters): Promise<void> {
   try {
     await AsyncStorage.setItem('user-rate-limits', JSON.stringify(counters));
   } catch (error) {
-    console.error('Error saving user counters:', error);
+    if (__DEV__) console.error('Error saving user counters:', error);
   }
 }
 

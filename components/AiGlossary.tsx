@@ -80,7 +80,7 @@ export default function AiGlossary({ contractText, onClose }: AiGlossaryProps) {
       });
       
     } catch (error) {
-      console.error('Error getting AI definition:', error);
+      if (__DEV__) console.error('Error getting AI definition:', error);
       setCurrentDefinition({
         term: searchQuery,
         definition: 'Sorry, I could not provide a definition at this time. Please try again or consult a legal professional.',

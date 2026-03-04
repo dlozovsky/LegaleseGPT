@@ -3,6 +3,7 @@ import { View, StyleSheet, TextInput, ScrollView, Alert, Platform } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useDocumentStore } from '@/hooks/useDocumentStore';
+import { useThemeStore } from '@/hooks/useThemeStore';
 import { simplifyText, getRateLimitStatus } from '@/utils/aiService';
 import { generateDocumentTitle } from '@/utils/documentUtils';
 import Button from '@/components/Button';
@@ -13,6 +14,7 @@ import RateLimitInfo from '@/components/RateLimitInfo';
 import { isDocumentTooLarge } from '@/utils/documentProcessing';
 
 export default function PasteScreen() {
+  const { isDarkMode } = useThemeStore();
   const [text, setText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,7 @@ export default function PasteScreen() {
         const status = await getRateLimitStatus();
         setRateLimitStatus(status);
       } catch (error) {
-        console.error('Error loading rate limit status:', error);
+        if (__DEV__) console.error('Error loading rate limit status:', error);
       }
     };
     
@@ -99,7 +101,7 @@ export default function PasteScreen() {
       // Navigate to results
       router.push(`/results/${newDocument.id}`);
     } catch (error) {
-      console.error('Error processing text:', error);
+      if (__DEV__) console.error('Error processing text:', error);
       setError(error instanceof Error ? error.message : 'Text processing failed. Please try again.');
     } finally {
       setIsProcessing(false);
@@ -110,8 +112,20 @@ export default function PasteScreen() {
                     rateLimitStatus.scansToday < rateLimitStatus.maxScansPerDay && 
                     rateLimitStatus.scansThisMinute < rateLimitStatus.maxScansPerMinute;
 
+  const themeColors = isDarkMode ? {
+    background: colors.darkBackground,
+    text: colors.darkText,
+    card: colors.darkSecondary,
+    border: colors.darkBorder,
+  } : {
+    background: colors.background,
+    text: colors.text,
+    card: 'white',
+    border: colors.border,
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]} edges={['bottom']}>
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -129,9 +143,9 @@ export default function PasteScreen() {
           maxScansPerMinute={rateLimitStatus.maxScansPerMinute}
         />
 
-        <View style={styles.textAreaContainer}>
+        <View style={[styles.textAreaContainer, { borderColor: themeColors.border, backgroundColor: themeColors.card }]}>
           <TextInput
-            style={styles.textArea}
+            style={[styles.textArea, { color: themeColors.text }]}
             multiline
             placeholder="Paste your legal text here..."
             value={text}
@@ -168,7 +182,6 @@ export default function PasteScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
@@ -179,16 +192,13 @@ const styles = StyleSheet.create({
   },
   textAreaContainer: {
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: 8,
-    backgroundColor: 'white',
     marginBottom: 16,
   },
   textArea: {
     height: 300,
     padding: 16,
     fontSize: 16,
-    color: colors.text,
     textAlignVertical: 'top',
   },
   actions: {

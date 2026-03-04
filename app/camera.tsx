@@ -39,7 +39,7 @@ export default function CameraScreen() {
         const status = await getRateLimitStatus();
         setRateLimitStatus(status);
       } catch (error) {
-        console.error('Error loading rate limit status:', error);
+        if (__DEV__) console.error('Error loading rate limit status:', error);
       }
     };
     
@@ -68,7 +68,7 @@ export default function CameraScreen() {
     }
 
     if (!cameraRef.current) {
-      console.error('Camera ref is null');
+      if (__DEV__) console.error('Camera ref is null');
       setError('Camera not available. Please try again.');
       return;
     }
@@ -77,13 +77,13 @@ export default function CameraScreen() {
     setError(null);
     
     try {
-      console.log('Taking picture...');
+      if (__DEV__) console.log('Taking picture...');
       const photo = await cameraRef.current.takePictureAsync({
         quality: 0.9,
         base64: false, // We don't need base64 for the preview
       });
       
-      console.log('Picture taken:', photo?.uri);
+      if (__DEV__) console.log('Picture taken:', photo?.uri);
       
       if (photo && photo.uri) {
         setCapturedImage(photo.uri);
@@ -92,7 +92,7 @@ export default function CameraScreen() {
         throw new Error('Failed to capture image');
       }
     } catch (error) {
-      console.error('Error taking picture:', error);
+      if (__DEV__) console.error('Error taking picture:', error);
       setError('Failed to capture image. Please try again.');
       setIsCapturing(false);
     }
@@ -117,23 +117,23 @@ export default function CameraScreen() {
     try {
       // Extract text and simplify in one step
       setProcessingStep('Extracting and analyzing text...');
-      console.log('Starting OCR extraction and simplification for image:', uri);
+      if (__DEV__) console.log('Starting OCR extraction and simplification for image:', uri);
       
       const result = await extractTextFromImage(uri);
       
-      console.log('Extracted text:', result.originalText?.substring(0, 100) + '...');
-      console.log('Simplified text:', result.simplifiedText?.substring(0, 100) + '...');
+      if (__DEV__) console.log('Extracted text:', result.originalText?.substring(0, 100) + '...');
+      if (__DEV__) console.log('Simplified text:', result.simplifiedText?.substring(0, 100) + '...');
       
       // Generate a title
       setProcessingStep('Generating document title...');
-      console.log('Generating document title...');
+      if (__DEV__) console.log('Generating document title...');
       
       let title;
       try {
         title = await generateDocumentTitle(result.originalText);
-        console.log('Generated title:', title);
+        if (__DEV__) console.log('Generated title:', title);
       } catch (titleError) {
-        console.error('Title generation error:', titleError);
+        if (__DEV__) console.error('Title generation error:', titleError);
         title = "Scanned Document";
       }
       
@@ -147,7 +147,7 @@ export default function CameraScreen() {
       };
       
       // Add to store
-      console.log('Adding document to history:', newDocument.id);
+      if (__DEV__) console.log('Adding document to history:', newDocument.id);
       addToHistory(newDocument);
       
       // Update rate limit status
@@ -155,10 +155,10 @@ export default function CameraScreen() {
       setRateLimitStatus(updatedStatus);
       
       // Navigate to results
-      console.log('Navigating to results page');
+      if (__DEV__) console.log('Navigating to results page');
       router.push(`/results/${newDocument.id}`);
     } catch (error) {
-      console.error('Error processing image:', error);
+      if (__DEV__) console.error('Error processing image:', error);
       if (error instanceof Error) {
         setError(error.message);
       } else {

@@ -21,27 +21,7 @@ import { router } from 'expo-router';
 import { useThemeStore } from '@/hooks/useThemeStore';
 import Slider from '@/components/Slider';
 
-// Check if Clerk is available
-const getClerkHooks = () => {
-  try {
-    const clerkExpo = require('@clerk/clerk-expo');
-    return {
-      useUser: clerkExpo.useUser,
-      useAuth: clerkExpo.useAuth,
-      SignedIn: clerkExpo.SignedIn,
-      SignedOut: clerkExpo.SignedOut,
-      available: true
-    };
-  } catch (error) {
-    return {
-      useUser: () => ({ user: null }),
-      useAuth: () => ({ signOut: null, isSignedIn: false }),
-      SignedIn: ({ children }: { children: React.ReactNode }) => null,
-      SignedOut: ({ children }: { children: React.ReactNode }) => children,
-      available: false
-    };
-  }
-};
+import { getClerkHooks } from '@/utils/clerkHelpers';
 
 const clerkHooks = getClerkHooks();
 
@@ -96,7 +76,7 @@ export default function ProfileScreen() {
         await signOut();
       }
     } catch (error) {
-      console.error('Error signing out:', error);
+      if (__DEV__) console.error('Error signing out:', error);
     }
   };
 
@@ -111,7 +91,7 @@ export default function ProfileScreen() {
   };
 
   const SignedOutWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (!clerkHooks.available || isSignedIn) return <>{children}</>;
+    if (clerkHooks.available && isSignedIn) return null;
     return <>{children}</>;
   };
 
@@ -375,6 +355,7 @@ export default function ProfileScreen() {
               title="View"
               variant="outline"
               size="small"
+              onPress={navigateToDisclaimer}
               style={styles.aboutButton}
             />
           </View>

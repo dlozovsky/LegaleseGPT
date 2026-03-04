@@ -21,7 +21,7 @@ export async function generateDocumentTitle(text: string): Promise<string> {
 export async function createShareableFile(content: string, filename: string): Promise<string> {
   // Check if we're on web or if FileSystem is not available
   if (Platform.OS === 'web' || !FileSystem) {
-    console.log('FileSystem not available for sharing on web');
+    if (__DEV__) console.log('FileSystem not available for sharing on web');
     throw new Error('File sharing is not available on web');
   }
   
@@ -30,7 +30,7 @@ export async function createShareableFile(content: string, filename: string): Pr
     await FileSystem.writeAsStringAsync(fileUri, content);
     return fileUri;
   } catch (error) {
-    console.error('Error creating shareable file:', error);
+    if (__DEV__) console.error('Error creating shareable file:', error);
     throw new Error('Failed to create shareable file');
   }
 }

@@ -13,14 +13,16 @@ export interface EnhancedDocumentItem extends DocumentItem {
 interface DocumentState {
   history: EnhancedDocumentItem[];
   saved: EnhancedDocumentItem[];
-  searchQuery: string;
+  historySearchQuery: string;
+  savedSearchQuery: string;
   addToHistory: (document: EnhancedDocumentItem) => void;
   addToSaved: (document: EnhancedDocumentItem) => void;
   removeFromHistory: (id: number) => void;
   removeFromSaved: (id: number) => void;
   clearAllHistory: () => void;
   getDocument: (id: string) => EnhancedDocumentItem | undefined;
-  setSearchQuery: (query: string) => void;
+  setHistorySearchQuery: (query: string) => void;
+  setSavedSearchQuery: (query: string) => void;
   getFilteredHistory: () => EnhancedDocumentItem[];
   getFilteredSaved: () => EnhancedDocumentItem[];
   toggleFavorite: (document: EnhancedDocumentItem) => void;
@@ -32,10 +34,14 @@ export const useDocumentStore = create<DocumentState>()(
     (set, get) => ({
       history: [],
       saved: [],
-      searchQuery: '',
+      historySearchQuery: '',
+      savedSearchQuery: '',
       addToHistory: (document) => {
-        const { saveHistory } = require('./useThemeStore').useThemeStore.getState();
-        if (saveHistory) {
+        // Read saveHistory preference directly from theme store without
+        // a fragile runtime require() – the import is at the top of this file.
+        const themeStore = (require('@/hooks/useThemeStore') as typeof import('@/hooks/useThemeStore')).useThemeStore;
+        const { saveHistory } = themeStore.getState();
+        if (saveHistory !== false) {
           set((state) => ({
             history: [document, ...state.history]
           }));
@@ -61,25 +67,26 @@ export const useDocumentStore = create<DocumentState>()(
         const historyDoc = state.history.find(doc => doc.id.toString() === id);
         return historyDoc;
       },
-      setSearchQuery: (query) => set({ searchQuery: query }),
+      setHistorySearchQuery: (query) => set({ historySearchQuery: query }),
+      setSavedSearchQuery: (query) => set({ savedSearchQuery: query }),
       getFilteredHistory: () => {
-        const { history, searchQuery } = get();
-        if (!searchQuery.trim()) return history;
-        
+        const { history, historySearchQuery } = get();
+        if (!historySearchQuery.trim()) return history;
+        const q = historySearchQuery.toLowerCase();
         return history.filter(doc => 
-          doc.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-          doc.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          doc.simplified.toLowerCase().includes(searchQuery.toLowerCase())
+          doc.title.toLowerCase().includes(q) || 
+          doc.text.toLowerCase().includes(q) ||
+          doc.simplified.toLowerCase().includes(q)
         );
       },
       getFilteredSaved: () => {
-        const { saved, searchQuery } = get();
-        if (!searchQuery.trim()) return saved;
-        
+        const { saved, savedSearchQuery } = get();
+        if (!savedSearchQuery.trim()) return saved;
+        const q = savedSearchQuery.toLowerCase();
         return saved.filter(doc => 
-          doc.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-          doc.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          doc.simplified.toLowerCase().includes(searchQuery.toLowerCase())
+          doc.title.toLowerCase().includes(q) || 
+          doc.text.toLowerCase().includes(q) ||
+          doc.simplified.toLowerCase().includes(q)
         );
       },
       toggleFavorite: (document) => {

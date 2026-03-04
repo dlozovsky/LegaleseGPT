@@ -17,8 +17,8 @@ export default function SavedScreen() {
   const { isDarkMode } = useThemeStore();
   const { 
     removeFromSaved, 
-    searchQuery, 
-    setSearchQuery, 
+    savedSearchQuery, 
+    setSavedSearchQuery, 
     getFilteredSaved 
   } = useDocumentStore();
   
@@ -41,7 +41,7 @@ export default function SavedScreen() {
       await Clipboard.setStringAsync(text);
       Alert.alert('Success', 'Copied to clipboard!');
     } catch (error) {
-      console.error('Error copying to clipboard:', error);
+      if (__DEV__) console.error('Error copying to clipboard:', error);
       Alert.alert('Error', 'Failed to copy to clipboard');
     }
   };
@@ -72,7 +72,7 @@ Simplified with Legalese GPT
         title: document.title,
       });
     } catch (error) {
-      console.error('Error sharing document:', error);
+      if (__DEV__) console.error('Error sharing document:', error);
       Alert.alert('Error', 'Failed to share document');
     }
   };
@@ -105,7 +105,7 @@ Simplified with Legalese GPT
     <View style={styles.emptyState}>
       <Bookmark size={48} color={themeColors.border} style={styles.emptyIcon} />
       <Text style={[styles.emptyText, { color: themeColors.textLight }]}>
-        {searchQuery ? "No documents match your search" : "No saved documents"}
+        {savedSearchQuery ? "No documents match your search" : "No saved documents"}
       </Text>
     </View>
   );
@@ -165,8 +165,8 @@ Simplified with Legalese GPT
         <Text style={[styles.title, { color: themeColors.text }]}>Saved Documents</Text>
         
         <SearchBar 
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+          value={savedSearchQuery}
+          onChangeText={setSavedSearchQuery}
           placeholder="Search saved documents..."
         />
       </View>

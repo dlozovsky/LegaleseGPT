@@ -7,7 +7,8 @@ import {
   TouchableOpacityProps,
   ViewStyle,
   TextStyle,
-  View
+  View,
+  StyleProp,
 } from 'react-native';
 import colors from '@/constants/colors';
 import { useThemeStore } from '@/hooks/useThemeStore';
@@ -17,7 +18,7 @@ interface ButtonProps extends TouchableOpacityProps {
   variant?: 'primary' | 'secondary' | 'outline';
   size?: 'small' | 'medium' | 'large';
   loading?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   textStyle?: TextStyle;
   icon?: React.ReactNode;
 }

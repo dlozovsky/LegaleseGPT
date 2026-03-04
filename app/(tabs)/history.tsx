@@ -17,8 +17,8 @@ export default function HistoryScreen() {
   const { 
     removeFromHistory, 
     clearAllHistory, 
-    searchQuery, 
-    setSearchQuery, 
+    historySearchQuery, 
+    setHistorySearchQuery, 
     getFilteredHistory 
   } = useDocumentStore();
   
@@ -82,7 +82,7 @@ export default function HistoryScreen() {
     <View style={styles.emptyState}>
       <History size={48} color={themeColors.border} style={styles.emptyIcon} />
       <Text style={[styles.emptyText, { color: themeColors.textLight }]}>
-        {searchQuery ? "No documents match your search" : "No history yet"}
+        {historySearchQuery ? "No documents match your search" : "No history yet"}
       </Text>
     </View>
   );
@@ -129,8 +129,8 @@ export default function HistoryScreen() {
         </View>
         
         <SearchBar 
-          value={searchQuery}
-          onChangeText={setSearchQuery}
+          value={historySearchQuery}
+          onChangeText={setHistorySearchQuery}
           placeholder="Search documents..."
         />
       </View>

@@ -39,7 +39,7 @@ export async function isFileTooLarge(fileUri: string): Promise<boolean> {
     }
     return false;
   } catch (error) {
-    console.error('Error checking file size:', error);
+    if (__DEV__) console.error('Error checking file size:', error);
     return false;
   }
 }
@@ -61,11 +61,11 @@ export async function extractTextFromPDF(fileUri: string): Promise<string> {
       throw new Error('PDF processing is not available on web. Please use the mobile app or paste text directly.');
     }
 
-    // For now, we'll throw an error since we don't have a PDF processing library
-    // In a real implementation, you would use a library like react-native-pdf-lib
-    throw new Error('PDF text extraction is not yet implemented. Please convert your PDF to text and paste it directly, or use an image of the document instead.');
+    // PDF text extraction requires a native library (e.g. react-native-pdf-lib).
+    // Until one is integrated, guide the user to an alternative input method.
+    throw new Error('PDF text extraction is not yet supported. Please take a photo of the document or paste the text directly.');
   } catch (error) {
-    console.error('Error extracting text from PDF:', error);
+    if (__DEV__) console.error('Error extracting text from PDF:', error);
     throw error;
   }
 }
@@ -88,11 +88,11 @@ export async function extractTextFromWord(fileUri: string, fileType: string): Pr
       throw new Error(`${fileType.toUpperCase()} processing is not available on web. Please use the mobile app or paste text directly.`);
     }
 
-    // For now, we'll throw an error since we don't have a Word processing library
-    // In a real implementation, you would use a library like mammoth.js
-    throw new Error(`${fileType.toUpperCase()} text extraction is not yet implemented. Please convert your document to text and paste it directly, or use an image of the document instead.`);
+    // Word doc extraction requires a native library (e.g. mammoth.js).
+    // Until one is integrated, guide the user to an alternative input method.
+    throw new Error(`${fileType.toUpperCase()} text extraction is not yet supported. Please take a photo of the document or paste the text directly.`);
   } catch (error) {
-    console.error(`Error extracting text from ${fileType}:`, error);
+    if (__DEV__) console.error(`Error extracting text from ${fileType}:`, error);
     throw error;
   }
 }
@@ -124,7 +124,7 @@ export async function extractTextFromTextFile(fileUri: string): Promise<string> 
 
     return content;
   } catch (error) {
-    console.error('Error reading text file:', error);
+    if (__DEV__) console.error('Error reading text file:', error);
     throw error;
   }
 }
@@ -230,7 +230,7 @@ export async function getFileInfo(fileUri: string): Promise<{
       };
     }
   } catch (error) {
-    console.error('Error getting file info:', error);
+    if (__DEV__) console.error('Error getting file info:', error);
     throw new Error('Failed to get file information');
   }
 }
