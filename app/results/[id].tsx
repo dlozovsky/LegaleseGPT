@@ -2,14 +2,15 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
-import { Heart, Share2, Download, ChevronLeft, Sparkles, MessageCircle, ArrowLeftRight, Calendar, Crown } from 'lucide-react-native';
+import { Heart, Share2, Download, ChevronLeft, Sparkles, MessageCircle, ArrowLeftRight, Calendar, Crown, Globe, Highlighter } from 'lucide-react-native';
 import { useDocumentStore } from '@/hooks/useDocumentStore';
 import { useThemeStore } from '@/hooks/useThemeStore';
 import { useSubscriptionStore } from '@/hooks/useSubscriptionStore';
+import { useAnnotationStore } from '@/hooks/useAnnotationStore';
 import { exportDocument } from '@/utils/exportService';
-import colors from '@/constants/colors';
+import colors, { highlightColorMap } from '@/constants/colors';
 import Button from '@/components/Button';
-import TextDisplay from '@/components/TextDisplay';
+import AnnotatedText from '@/components/AnnotatedText';
 import ContractOverview from '@/components/ContractOverview';
 import SectionCard from '@/components/SectionCard';
 
@@ -28,12 +29,18 @@ export default function ResultsScreen() {
   const { isDarkMode } = useThemeStore();
   const { getDocument, toggleFavorite, saved } = useDocumentStore();
   const { canExport, incrementExports, isPremium } = useSubscriptionStore();
+  const { getAnnotations } = useAnnotationStore();
   const [activeTab, setActiveTab] = useState<TabType>('simplified');
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
   const [isExporting, setIsExporting] = useState(false);
   
   const document = getDocument(id as string);
   const isFavorited = saved.some(doc => doc.id === document?.id);
+
+  // Get annotations for current tab
+  const currentAnnotations = document
+    ? getAnnotations(document.id, activeTab === 'analysis' ? 'simplified' : activeTab)
+    : [];
   
   const themeColors = isDarkMode ? {
     background: colors.darkBackground,
@@ -96,7 +103,12 @@ ${content}`,
     }
     setIsExporting(true);
     try {
-      await exportDocument(document);
+      const simplifiedAnns = getAnnotations(document.id, 'simplified');
+      const originalAnns = getAnnotations(document.id, 'original');
+      await exportDocument(document, {
+        simplified: simplifiedAnns,
+        original: originalAnns,
+      });
       incrementExports();
     } catch (error) {
       Alert.alert('Export Error', error instanceof Error ? error.message : 'Failed to export document.');
@@ -200,28 +212,42 @@ ${content}`,
           <Text style={[styles.documentDate, { color: themeColors.textLight }]}>
             Processed on {document.date}
           </Text>
-          {document.hasAiAnalysis && (
-            <View style={styles.aiIndicator}>
-              <Sparkles size={16} color={isDarkMode ? colors.darkPrimary : colors.primary} />
-              <Text style={[styles.aiIndicatorText, { color: isDarkMode ? colors.darkPrimary : colors.primary }]}>
-                AI Analysis Available
-              </Text>
-            </View>
-          )}
+          <View style={styles.badgeRow}>
+            {document.hasAiAnalysis && (
+              <View style={styles.aiIndicator}>
+                <Sparkles size={16} color={isDarkMode ? colors.darkPrimary : colors.primary} />
+                <Text style={[styles.aiIndicatorText, { color: isDarkMode ? colors.darkPrimary : colors.primary }]}>
+                  AI Analysis Available
+                </Text>
+              </View>
+            )}
+            {document.detectedLanguage && document.detectedLanguage !== 'English' && (
+              <View style={[styles.languageBadge, { backgroundColor: isDarkMode ? colors.darkPrimary + '20' : colors.primaryLight + '30' }]}>
+                <Globe size={14} color={isDarkMode ? colors.darkPrimary : colors.primary} />
+                <Text style={[styles.languageBadgeText, { color: isDarkMode ? colors.darkPrimary : colors.primary }]}>
+                  {document.detectedLanguage}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Content based on active tab */}
         {activeTab === 'simplified' && (
-          <TextDisplay 
+          <AnnotatedText
             title="Simplified Version"
             content={document.simplified}
+            documentId={document.id}
+            tab="simplified"
           />
         )}
 
         {activeTab === 'original' && (
-          <TextDisplay 
+          <AnnotatedText
             title="Original Text"
             content={document.text}
+            documentId={document.id}
+            tab="original"
           />
         )}
 
@@ -261,6 +287,36 @@ ${content}`,
                 />
               ))}
             </View>
+          </View>
+        )}
+
+        {/* Annotations summary */}
+        {currentAnnotations.length > 0 && activeTab !== 'analysis' && (
+          <View style={[styles.annotationsSummary, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+            <View style={styles.annotationsSummaryHeader}>
+              <Highlighter size={16} color={isDarkMode ? colors.darkPrimary : colors.primary} />
+              <Text style={[styles.annotationsSummaryTitle, { color: themeColors.text }]}>
+                Annotations ({currentAnnotations.length})
+              </Text>
+            </View>
+            {currentAnnotations.map((ann) => {
+              const colorInfo = highlightColorMap[ann.color];
+              return (
+                <View key={ann.id} style={[styles.annotationItem, { borderColor: themeColors.border }]}>
+                  <View style={[styles.annotationColorDot, { backgroundColor: colorInfo.bg }]} />
+                  <View style={styles.annotationItemContent}>
+                    <Text style={[styles.annotationExcerpt, { color: themeColors.text }]} numberOfLines={1}>
+                      "{(activeTab === 'simplified' ? document.simplified : document.text).slice(ann.startOffset, ann.endOffset)}"
+                    </Text>
+                    {ann.note ? (
+                      <Text style={[styles.annotationNote, { color: themeColors.textLight }]} numberOfLines={1}>
+                        {ann.note}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -363,6 +419,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 8,
   },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
   aiIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -373,6 +435,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  languageBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  languageBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   analysisContainer: {
     gap: 20,
@@ -454,5 +528,44 @@ const styles = StyleSheet.create({
   },
   errorButton: {
     paddingHorizontal: 32,
+  },
+  annotationsSummary: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    marginTop: 16,
+  },
+  annotationsSummaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  annotationsSummaryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  annotationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    gap: 10,
+  },
+  annotationColorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  annotationItemContent: {
+    flex: 1,
+  },
+  annotationExcerpt: {
+    fontSize: 13,
+    fontStyle: 'italic',
+  },
+  annotationNote: {
+    fontSize: 12,
+    marginTop: 2,
   },
 });

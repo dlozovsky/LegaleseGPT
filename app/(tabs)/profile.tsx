@@ -18,7 +18,7 @@ import colors from '@/constants/colors';
 import Header from '@/components/Header';
 import Button from '@/components/Button';
 import { router } from 'expo-router';
-import { useThemeStore } from '@/hooks/useThemeStore';
+import { useThemeStore, SUPPORTED_OUTPUT_LANGUAGES, OutputLanguage } from '@/hooks/useThemeStore';
 import { useSubscriptionStore } from '@/hooks/useSubscriptionStore';
 import Slider from '@/components/Slider';
 
@@ -41,12 +41,14 @@ export default function ProfileScreen() {
     fontSize,
     saveHistory,
     defaultSimplificationLevel,
+    outputLanguage,
     toggleDarkMode,
     toggleHighContrast, 
     toggleTextToSpeech,
     toggleSaveHistory,
     setFontSize,
-    setDefaultSimplificationLevel
+    setDefaultSimplificationLevel,
+    setOutputLanguage,
   } = useThemeStore();
 
   const { isPremium, getRemainingScans } = useSubscriptionStore();
@@ -307,6 +309,27 @@ export default function ProfileScreen() {
           
           <View style={[styles.setting, { borderBottomColor: themeColors.border }]}>
             <View style={styles.settingInfo}>
+              <Text style={[styles.settingTitle, { color: themeColors.text }]}>Output Language</Text>
+              <Text style={[styles.settingDescription, { color: themeColors.textLight }]}>
+                Language for simplified output and AI analysis
+              </Text>
+            </View>
+            <View style={styles.languageOptions}>
+              {SUPPORTED_OUTPUT_LANGUAGES.map((lang) => (
+                <Button
+                  key={lang}
+                  title={lang}
+                  variant={outputLanguage === lang ? 'primary' : 'outline'}
+                  size="small"
+                  style={styles.languageButton}
+                  onPress={() => setOutputLanguage(lang)}
+                />
+              ))}
+            </View>
+          </View>
+
+          <View style={[styles.setting, { borderBottomColor: themeColors.border }]}>
+            <View style={styles.settingInfo}>
               <Text style={[styles.settingTitle, { color: themeColors.text }]}>Default Simplification Level</Text>
               <Text style={[styles.settingDescription, { color: themeColors.textLight }]}>
                 Set your preferred simplification level
@@ -501,6 +524,16 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     marginHorizontal: 4,
+  },
+  languageOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  languageButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   sliderContainer: {
     width: '100%',

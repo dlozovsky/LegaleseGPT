@@ -138,6 +138,7 @@ export function isLegalDocument(text: string): boolean {
   }
   
   const legalKeywords = [
+    // English
     'agreement', 'contract', 'terms', 'conditions', 'parties', 'hereby',
     'shall', 'provisions', 'clause', 'pursuant', 'obligations', 'rights',
     'liability', 'termination', 'governing law', 'jurisdiction', 'warranty',
@@ -156,7 +157,34 @@ export function isLegalDocument(text: string): boolean {
     'subscription', 'membership', 'user agreement', 'license terms',
     'service terms', 'website terms', 'app terms', 'platform terms',
     'data processing', 'cookies', 'gdpr', 'ccpa', 'privacy notice',
-    'consent', 'opt-in', 'opt-out', 'third party', 'affiliate', 'partner'
+    'consent', 'opt-in', 'opt-out', 'third party', 'affiliate', 'partner',
+    // Spanish
+    'contrato', 'acuerdo', 'términos', 'condiciones', 'partes', 'cláusula',
+    'obligaciones', 'derechos', 'responsabilidad', 'rescisión', 'garantía',
+    'confidencialidad', 'arrendamiento', 'inquilino', 'arrendador',
+    'empleador', 'empleado', 'pago', 'compensación', 'ley aplicable',
+    'jurisdicción', 'política de privacidad', 'términos de servicio',
+    // French
+    'contrat', 'accord', 'conditions', 'parties', 'clause', 'obligations',
+    'droits', 'responsabilité', 'résiliation', 'garantie', 'confidentialité',
+    'bail', 'locataire', 'bailleur', 'employeur', 'employé', 'paiement',
+    'rémunération', 'loi applicable', 'juridiction', 'politique de confidentialité',
+    // German
+    'vertrag', 'vereinbarung', 'bedingungen', 'parteien', 'klausel',
+    'verpflichtungen', 'rechte', 'haftung', 'kündigung', 'garantie',
+    'vertraulichkeit', 'mietvertrag', 'mieter', 'vermieter', 'arbeitgeber',
+    'arbeitnehmer', 'zahlung', 'vergütung', 'anwendbares recht', 'gerichtsstand',
+    'datenschutzrichtlinie',
+    // Portuguese
+    'contrato', 'acordo', 'termos', 'condições', 'partes', 'cláusula',
+    'obrigações', 'direitos', 'responsabilidade', 'rescisão', 'garantia',
+    'confidencialidade', 'arrendamento', 'inquilino', 'senhorio',
+    'empregador', 'empregado', 'pagamento', 'compensação', 'lei aplicável',
+    'jurisdição', 'política de privacidade',
+    // Chinese (pinyin / common terms)
+    '合同', '协议', '条款', '条件', '当事人', '义务', '权利',
+    '责任', '终止', '保证', '保密', '租赁', '雇主', '雇员',
+    '付款', '管辖', '隐私政策',
   ];
   
   const lowerText = text.toLowerCase();
@@ -330,7 +358,7 @@ export function detectSections(text: string): Array<{ heading: string; content: 
  * @param text The contract text
  * @returns Promise with contract analysis
  */
-export async function analyzeContract(text: string): Promise<ContractAnalysis> {
+export async function analyzeContract(text: string, outputLanguage: string = 'English'): Promise<ContractAnalysis> {
   try {
     // Validate input
     if (!text || text.trim().length === 0) {
@@ -354,7 +382,7 @@ export async function analyzeContract(text: string): Promise<ContractAnalysis> {
     
     for (const section of detectedSections) {
       try {
-        const analysis = await analyzeSectionWithAI(section.heading, section.content);
+        const analysis = await analyzeSectionWithAI(section.heading, section.content, outputLanguage);
         sectionAnalyses.push({
           ...analysis,
           originalText: section.content
@@ -397,17 +425,21 @@ export async function analyzeContract(text: string): Promise<ContractAnalysis> {
  * @param content Section content
  * @returns Promise with section analysis
  */
-async function analyzeSectionWithAI(heading: string, content: string): Promise<Omit<SectionAnalysis, 'originalText'>> {
+async function analyzeSectionWithAI(heading: string, content: string, outputLanguage: string = 'English'): Promise<Omit<SectionAnalysis, 'originalText'>> {
+  const languageNote = outputLanguage !== 'English'
+    ? ` Write the summary and tooltip in ${outputLanguage}.`
+    : '';
+
   const messages = [
     {
       role: 'system',
-      content: `You are a contract analysis expert. Analyze the given section and respond with a JSON object containing:
+      content: `You are a contract analysis expert. You can analyze legal documents written in ANY language. Analyze the given section and respond with a JSON object containing:
 - heading: the section heading
-- summary: a plain-English summary (≤ 50 words)
+- summary: a plain-language summary (≤ 50 words)${languageNote}
 - confidence: confidence score (0.0-1.0)
 - category: one of "Termination & Renewal", "Payment & Fees", "Liability & Indemnity", "Confidentiality & Non-Compete", "Miscellaneous"
 - risk: "low", "medium", or "high"
-- tooltip: brief warning if risk is medium/high (optional)
+- tooltip: brief warning if risk is medium/high (optional)${languageNote}
 
 Example response:
 {
@@ -540,14 +572,53 @@ function extractKeyFindings(sections: SectionAnalysis[]): string[] {
 }
 
 /**
+ * Detect the language of a text using AI
+ * @param text The text to detect language for
+ * @returns Promise with the detected language name (e.g. "English", "Spanish")
+ */
+export async function detectLanguage(text: string): Promise<string> {
+  try {
+    if (!text || text.trim().length < 20) {
+      return 'English';
+    }
+
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are a language detection expert. Respond with ONLY the language name in English (e.g. "English", "Spanish", "French", "German", "Portuguese", "Chinese", "Japanese", "Korean", "Arabic", "Russian", "Italian", "Dutch"). Do not include any other text.'
+      },
+      {
+        role: 'user',
+        content: `Detect the language of this text:\n\n${text.substring(0, 500)}`
+      }
+    ];
+
+    const response = await callAPI(messages);
+    const lang = response.trim().replace(/["'.]/g, '');
+
+    // Validate the response looks like a language name (1-2 words)
+    if (lang.split(/\s+/).length <= 3 && lang.length < 30) {
+      return lang;
+    }
+
+    return 'English';
+  } catch (error) {
+    if (__DEV__) console.error('Error detecting language:', error);
+    return 'English';
+  }
+}
+
+/**
  * Simplify legal text with proper validation and formatting
  * @param text The legal text to simplify
  * @param complexityLevel The desired simplification level (1-3)
+ * @param outputLanguage The desired output language (default: 'English')
  * @returns Promise with the simplified text
  */
 export async function simplifyText(
   text: string, 
-  complexityLevel: number = 1
+  complexityLevel: number = 1,
+  outputLanguage: string = 'English'
 ): Promise<string> {
   try {
     // Validate input
@@ -569,16 +640,20 @@ export async function simplifyText(
       complexityLevel === 1 ? 'very simple language suitable for anyone to understand' : 
       complexityLevel === 2 ? 'moderately simple language with some legal terms explained' : 
       'clearer language while preserving important legal details';
+
+    const languageInstruction = outputLanguage !== 'English'
+      ? `IMPORTANT: The output MUST be written entirely in ${outputLanguage}.`
+      : '';
     
     // Create messages array with proper format and specific instructions for formatting
     const messages = [
       {
         role: 'system',
-        content: 'You are a legal expert who specializes in translating complex legal language into plain English. Your goal is to make legal documents accessible to everyone while preserving the essential meaning and important details. Always respond with clean, well-formatted text using proper paragraphs and clear structure. NEVER use markdown formatting, bullet points, or special characters. Use only plain text with paragraph breaks.'
+        content: `You are a legal expert who specializes in translating complex legal language into plain, accessible language. You can read legal documents in ANY language and produce output in the requested language. Your goal is to make legal documents accessible to everyone while preserving the essential meaning and important details. Always respond with clean, well-formatted text using proper paragraphs and clear structure. NEVER use markdown formatting, bullet points, or special characters. Use only plain text with paragraph breaks. ${languageInstruction}`
       },
       {
         role: 'user',
-        content: `Please rewrite this legal text using ${complexityDescription}. Make it clear and easy to understand while keeping all the important information. 
+        content: `Please rewrite this legal text using ${complexityDescription}. Make it clear and easy to understand while keeping all the important information. ${outputLanguage !== 'English' ? `Write the output in ${outputLanguage}.` : ''}
 
 CRITICAL FORMATTING REQUIREMENTS:
 - Use ONLY plain text with clear paragraphs

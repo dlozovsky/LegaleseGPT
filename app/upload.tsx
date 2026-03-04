@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { useDocumentStore, EnhancedDocumentItem } from '@/hooks/useDocumentStore';
 import { useThemeStore } from '@/hooks/useThemeStore';
 import { extractTextFromPDF, extractTextFromWord, extractTextFromTextFile, isDocumentTooLarge } from '@/utils/documentProcessing';
-import { simplifyText, getRateLimitStatus, analyzeContract } from '@/utils/aiService';
+import { simplifyText, getRateLimitStatus, analyzeContract, detectLanguage } from '@/utils/aiService';
 import { generateDocumentTitle } from '@/utils/documentUtils';
 import { extractTextFromImage } from '@/utils/ocrService';
 import FileUploader from '@/components/FileUploader';
@@ -16,7 +16,7 @@ import RateLimitInfo from '@/components/RateLimitInfo';
 import colors from '@/constants/colors';
 
 export default function UploadScreen() {
-  const { isDarkMode } = useThemeStore();
+  const { isDarkMode, outputLanguage } = useThemeStore();
   const [fileUri, setFileUri] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileType, setFileType] = useState<string | null>(null);
@@ -181,6 +181,15 @@ export default function UploadScreen() {
         }
       }
       
+      // Detect language
+      updateProgress('Detecting language...', 82);
+      let detectedLanguage = 'English';
+      try {
+        detectedLanguage = await detectLanguage(extractedText);
+      } catch {
+        if (__DEV__) console.log('Language detection failed, defaulting to English');
+      }
+
       // Generate a title
       updateProgress('Generating document title...', 85);
       if (__DEV__) console.log('Generating title');
@@ -201,7 +210,8 @@ export default function UploadScreen() {
         date: new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}),
         text: extractedText,
         simplified: simplifiedText,
-        hasAiAnalysis: false
+        hasAiAnalysis: false,
+        detectedLanguage,
       };
       
       // Add to store
