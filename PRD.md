@@ -1,8 +1,9 @@
 # Legalese GPT — Product Requirements Document
 
-**Version:** 2.0.0
+**Version:** 2.1.0
 **Date:** March 4, 2026
 **Status:** Pre-Launch
+**README:** See [`README.md`](./README.md) for setup, project structure, and developer onboarding.
 
 ---
 
@@ -211,14 +212,25 @@ Legalese GPT is a mobile-first AI-powered legal document simplifier. Users uploa
 - `app/paywall.tsx` — Premium subscription screen
 - `app/chat/[id].tsx` — AI follow-up chat
 - `app/compare/[id].tsx` — Document comparison view
+- `app/glossary.tsx` — AI legal glossary screen
+- `app/disclaimer.tsx` — Legal disclaimer screen
+- `app/privacy-policy.tsx` — Privacy policy screen
+- `app/error-boundary.tsx` — Error boundary wrapper
 - `hooks/useSubscriptionStore.ts` — Subscription state management
 - `utils/exportService.ts` — Document export functionality
+- `utils/ocrService.ts` — Camera OCR via ML Kit
+- `utils/documentUtils.ts` — Document utility functions
+- `utils/clerkHelpers.ts` — Clerk provider helpers
+- `components/AiGlossary.tsx` — Glossary UI component
+- `components/ContractOverview.tsx` — Contract analysis overview component
+- `components/RateLimitInfo.tsx` — Rate limit display component
+- `README.md` — Developer README with setup & project structure
 - `PRD.md` — This document
 
 ### Modified Files
 - `hooks/useThemeStore.ts` — Added `hasOnboarded` flag
 - `hooks/useDocumentStore.ts` — Added `KeyDate` interface, `keyDates` field, `updateDocumentKeyDates`
-- `utils/aiService.ts` — Added `extractKeyDates()` function
-- `app/_layout.tsx` — Registered new screens, added onboarding redirect
+- `utils/aiService.ts` — Added `extractKeyDates()` function, rate limiting, legal document validation
+- `app/_layout.tsx` — Registered new screens, added onboarding redirect, Clerk provider
 - `app/results/[id].tsx` — Added Chat, Export, Compare, Key Dates, Upgrade buttons
 - `app/(tabs)/profile.tsx` — Added Subscription section with upgrade CTA
