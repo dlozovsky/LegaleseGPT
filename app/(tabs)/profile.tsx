@@ -19,6 +19,7 @@ import Header from '@/components/Header';
 import Button from '@/components/Button';
 import { router } from 'expo-router';
 import { useThemeStore } from '@/hooks/useThemeStore';
+import { useSubscriptionStore } from '@/hooks/useSubscriptionStore';
 import Slider from '@/components/Slider';
 
 import { getClerkHooks } from '@/utils/clerkHelpers';
@@ -47,6 +48,8 @@ export default function ProfileScreen() {
     setFontSize,
     setDefaultSimplificationLevel
   } = useThemeStore();
+
+  const { isPremium, getRemainingScans } = useSubscriptionStore();
 
   const themeColors = isDarkMode ? {
     background: colors.darkBackground,
@@ -159,6 +162,27 @@ export default function ProfileScreen() {
             </SignedOutWrapper>
           </>
         )}
+
+        {/* Subscription */}
+        <View style={[styles.section, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Subscription</Text>
+          {isPremium ? (
+            <View style={styles.premiumBadge}>
+              <Text style={styles.premiumBadgeText}>Premium Active</Text>
+            </View>
+          ) : (
+            <View>
+              <Text style={[styles.subscriptionInfo, { color: themeColors.textLight }]}>
+                Free plan — {getRemainingScans()} scans remaining today
+              </Text>
+              <Button
+                title="Upgrade to Premium"
+                onPress={() => router.push('/paywall')}
+                style={{ marginTop: 12 }}
+              />
+            </View>
+          )}
+        </View>
 
         <View style={[styles.section, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Theme</Text>
@@ -530,5 +554,21 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontWeight: '600',
+  },
+  premiumBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  premiumBadgeText: {
+    color: '#B45309',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  subscriptionInfo: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

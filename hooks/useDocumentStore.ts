@@ -4,10 +4,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DocumentItem } from '@/constants/mockData';
 import { ContractAnalysis } from '@/utils/aiService';
 
+// Key date extracted from a document
+export interface KeyDate {
+  label: string;
+  date: string;
+  description?: string;
+}
+
 // Extended document item with AI analysis
 export interface EnhancedDocumentItem extends DocumentItem {
   aiAnalysis?: ContractAnalysis;
   hasAiAnalysis?: boolean;
+  keyDates?: KeyDate[];
 }
 
 interface DocumentState {
@@ -27,6 +35,7 @@ interface DocumentState {
   getFilteredSaved: () => EnhancedDocumentItem[];
   toggleFavorite: (document: EnhancedDocumentItem) => void;
   updateDocumentWithAI: (id: number, aiAnalysis: ContractAnalysis) => void;
+  updateDocumentKeyDates: (id: number, keyDates: KeyDate[]) => void;
 }
 
 export const useDocumentStore = create<DocumentState>()(
@@ -116,6 +125,16 @@ export const useDocumentStore = create<DocumentState>()(
             doc.id === id 
               ? { ...doc, aiAnalysis, hasAiAnalysis: true }
               : doc
+          )
+        }));
+      },
+      updateDocumentKeyDates: (id, keyDates) => {
+        set((state) => ({
+          history: state.history.map(doc =>
+            doc.id === id ? { ...doc, keyDates } : doc
+          ),
+          saved: state.saved.map(doc =>
+            doc.id === id ? { ...doc, keyDates } : doc
           )
         }));
       }

@@ -775,6 +775,57 @@ function detectDocumentTypeFromKeywords(text: string): string {
 }
 
 /**
+ * Extract key dates and deadlines from a legal document
+ * @param text The document text
+ * @returns Promise with array of key dates
+ */
+export async function extractKeyDates(text: string): Promise<Array<{ label: string; date: string; description?: string }>> {
+  try {
+    if (!text || text.trim().length < 30) {
+      return [];
+    }
+
+    const messages = [
+      {
+        role: 'system',
+        content: `You are a legal document analyst. Extract all important dates, deadlines, and time periods from the given legal text. Respond with a JSON array of objects, each containing:
+- label: short name for the date (e.g. "Effective Date", "Termination Deadline")
+- date: the date or time period as stated in the document
+- description: brief explanation of why this date matters (optional)
+
+If no dates are found, return an empty array [].
+
+Example response:
+[
+  {"label": "Effective Date", "date": "January 1, 2025", "description": "When the agreement takes effect"},
+  {"label": "Renewal Deadline", "date": "60 days before expiry", "description": "Notice required to prevent auto-renewal"}
+]`
+      },
+      {
+        role: 'user',
+        content: `Extract all key dates and deadlines from this legal document:\n\n${text.substring(0, 4000)}`
+      }
+    ];
+
+    const response = await callAPI(messages);
+
+    try {
+      const parsed = JSON.parse(response);
+      if (Array.isArray(parsed)) {
+        return parsed.filter(item => item.label && item.date).slice(0, 10);
+      }
+    } catch {
+      if (__DEV__) console.error('Failed to parse key dates response');
+    }
+
+    return [];
+  } catch (error) {
+    if (__DEV__) console.error('Error extracting key dates:', error);
+    return [];
+  }
+}
+
+/**
  * Check rate limits before processing with the exact flow requested
  * @returns Object with allowed status and message
  */
